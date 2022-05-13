@@ -37,6 +37,8 @@ const byte btnPin = 2;
 const byte pirSensorPin = 4;
 int peepFrequency = 800;
 int servoLockedPosition = 90;
+int lockingTime = 5000;
+int warningTime = 3000;
 
 void setup() {
   servo.attach(5);
@@ -48,6 +50,42 @@ void setup() {
 }
 
 void loop() {
+  bool rightPasswordEntered = false;
+  
+  bool btnPressed;
+  bool moveDetected;
+  unlocked();
+  btnPressed = digitalRead(btnPin);
+  if (btnPressed) {
+    int countingTime = 0;
+    unsigned long int startCountingTime = millis();
+    while (countingTime <= lockingTime) {
+      locking();
+      countingTime = millis() - startCountingTime; 
+    }
+    moveDetected = digitalRead(pirSensorPin);
+    while (!moveDetected && !rightPasswordEntered) {
+     locked();
+     moveDetected = digitalRead(pirSensorPin);
+    }
+    if (moveDetected) {
+      int countingTime = 0;
+      unsigned long int startCountingTime = millis();
+      btnPressed = digitalRead(btnPin);
+      while (countingTime <= warningTime && !btnPressed) {
+       warning();
+       countingTime = millis() - startCountingTime;
+       btnPressed = digitalRead(btnPin);
+      }
+      if (countingTime > warningTime) {
+        while (!btnPressed) {
+          alarm();
+          btnPressed = digitalRead(btnPin);
+        }
+      }
+    }
+    delay(1000);
+  }
 }
 
 
