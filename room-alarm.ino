@@ -1,4 +1,5 @@
 #include <Servo.h>
+#include <Keypad.h>
 
 class Led {
   public:
@@ -39,6 +40,19 @@ int peepFrequency = 800;
 int servoLockedPosition = 90;
 int lockingTime = 5000;
 int warningTime = 3000;
+const byte keypadRows = 4;
+const byte keypadColumns = 3;
+const byte rowsPins[keypadRows] = {12, 11, 10, 9};
+const byte columnsPins[keypadColumns] = {8, 7, 6};
+String password = "123";
+
+char keypadCharacters[keypadRows][keypadColumns] = {
+   {'1','2','3'},
+   {'4','5','6'},
+   {'7','8','9'},
+   {'*','0','#'},
+};
+Keypad keyPad = Keypad(makeKeymap(keypadCharacters), rowsPins, columnsPins, keypadRows, keypadColumns);
 
 void setup() {
   servo.attach(5);
@@ -47,13 +61,15 @@ void setup() {
   pinMode(buzzPin, OUTPUT);
   pinMode(btnPin, INPUT);
   pinMode(pirSensorPin, INPUT);
+  Serial.begin(9600);
+  
+  password += '#';
 }
 
 void loop() {
-  bool rightPasswordEntered = false;
-  
   bool btnPressed;
   bool moveDetected;
+  bool rightPasswordEntered;
   unlocked();
   btnPressed = digitalRead(btnPin);
   if (btnPressed) {
@@ -67,6 +83,8 @@ void loop() {
     while (!moveDetected && !rightPasswordEntered) {
      locked();
      moveDetected = digitalRead(pirSensorPin);
+     String inputPassword = waitForPassword();
+     rightPasswordEntered = inputPassword == password;
     }
     if (moveDetected) {
       int countingTime = 0;
@@ -141,5 +159,19 @@ void peep(int peepInterval) {
       tone(buzzPin, peepFrequency);
     }
     peepCounter = millis() + peepInterval;
+  }
+}
+
+String waitForPassword() {
+  String pwd = "";
+  char key = keyPad.getKey();
+  if (key == '*') {
+    Serial.println("* pressed");
+    while (key != '#') {
+      key = keyPad.getKey();
+      pwd += key;
+      delay(10);
+    }
+    return pwd;
   }
 }
