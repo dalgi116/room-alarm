@@ -34,6 +34,7 @@ int peepFrequency = 800;
 int servoLockedPosition = 90;
 int lockingTime = 5000;
 int warningTime = 3000;
+int keypadResetTime = 10000;
 String password = "*111";
 
 Servo servo;
@@ -71,13 +72,15 @@ bool writingPwd;
 bool passwordsMatches;
 String pwd;
 String inputPwd;
+int countingTime;
+unsigned long int startCountingTime;
 
 void loop() {
   unlocked();
   btnPressed = digitalRead(btnPin);
   if (btnPressed) {
-    int countingTime = 0;
-    unsigned long int startCountingTime = millis();
+    countingTime = 0;
+    startCountingTime = millis();
     while (countingTime <= lockingTime) {
       locking();
       countingTime = millis() - startCountingTime; 
@@ -91,8 +94,8 @@ void loop() {
       passwordsMatches = inputPwd == password;
     }
     if (moveDetected) {
-      int countingTime = 0;
-      unsigned long int startCountingTime = millis();
+      countingTime = 0;
+      startCountingTime = millis();
       btnPressed = digitalRead(btnPin);
       while (countingTime <= warningTime && !btnPressed) {
         warning();
@@ -171,14 +174,18 @@ String getInputPwd() {
   if (pressedKey == '*') {
     pwd = "";
     writingPwd = true;
-    Serial.println("on");
+    countingTime = 0;
+    startCountingTime = millis();
   } else if (pressedKey == '#') {
     writingPwd = false;
-    Serial.println("off");
     return pwd;
   }
   if (writingPwd && pressedKey) {
     pwd += pressedKey;
+  }
+  countingTime = millis() - startCountingTime;
+  if (countingTime > keypadResetTime) {
+    writingPwd = false;
   }
   return "";
 }
