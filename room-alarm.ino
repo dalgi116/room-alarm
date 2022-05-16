@@ -32,8 +32,8 @@ class Led {
 
 int peepFrequency = 800;
 int servoLockedPosition = 90;
-int lockingTime = 5000;
-int warningTime = 3000;
+int lockingTime = 10000;
+int warningTime = 5000;
 int keypadResetTime = 10000;
 String password = "*111";
 
@@ -63,7 +63,6 @@ void setup() {
   pinMode(buzzPin, OUTPUT);
   pinMode(btnPin, INPUT);
   pinMode(pirSensorPin, INPUT);
-  Serial.begin(9600);
 }
 
 bool btnPressed;
@@ -103,12 +102,16 @@ void loop() {
         btnPressed = digitalRead(btnPin);
       }
       if (countingTime > warningTime) {
-        while (!btnPressed) {
+        passwordsMatches = false;
+        while (!btnPressed && !passwordsMatches) {
           alarm();
           btnPressed = digitalRead(btnPin);
+          inputPwd = getInputPwd();
+          passwordsMatches = inputPwd == password;
         }
       }
     }
+    tone(buzzPin, peepFrequency);
     delay(1000);
   }
 }
