@@ -30,21 +30,22 @@ class Led {
     }
 };
 
-Servo servo;
-Led rLED;
-Led yLED;
-const byte buzzPin = 3;
-const byte btnPin = 2;
-const byte pirSensorPin = 4;
 int peepFrequency = 800;
 int servoLockedPosition = 90;
 int lockingTime = 5000;
 int warningTime = 3000;
+String password = "*111";
+
+Servo servo;
+Led rLED;
+Led yLED;
+const byte buzzPin = 4;
+const byte btnPin = A5;
+const byte pirSensorPin = 5;
 const byte keypadRows = 4;
 const byte keypadColumns = 3;
-const byte rowsPins[keypadRows] = {12, 11, 10, 9};
-const byte columnsPins[keypadColumns] = {8, 7, 6};
-String password = "123";
+const byte rowsPins[keypadRows] = {13, 12, 11, 10};
+const byte columnsPins[keypadColumns] = {9, 8, 7};
 
 char keypadCharacters[keypadRows][keypadColumns] = {
    {'1','2','3'},
@@ -55,21 +56,23 @@ char keypadCharacters[keypadRows][keypadColumns] = {
 Keypad keyPad = Keypad(makeKeymap(keypadCharacters), rowsPins, columnsPins, keypadRows, keypadColumns);
 
 void setup() {
-  servo.attach(5);
-  yLED.setup(0);
-  rLED.setup(1);
+  servo.attach(6);
+  yLED.setup(3);
+  rLED.setup(2);
   pinMode(buzzPin, OUTPUT);
   pinMode(btnPin, INPUT);
   pinMode(pirSensorPin, INPUT);
   Serial.begin(9600);
-  
-  password += '#';
 }
 
+bool btnPressed;
+bool moveDetected;
+bool writingPwd;
+bool passwordsMatches;
+String pwd;
+String inputPwd;
+
 void loop() {
-  bool btnPressed;
-  bool moveDetected;
-  bool rightPasswordEntered;
   unlocked();
   btnPressed = digitalRead(btnPin);
   if (btnPressed) {
@@ -80,20 +83,21 @@ void loop() {
       countingTime = millis() - startCountingTime; 
     }
     moveDetected = digitalRead(pirSensorPin);
-    while (!moveDetected && !rightPasswordEntered) {
-     locked();
-     moveDetected = digitalRead(pirSensorPin);
-     String inputPassword = waitForPassword();
-     rightPasswordEntered = inputPassword == password;
+    passwordsMatches = false;
+    while (!moveDetected && !passwordsMatches) {
+      locked();
+      moveDetected = digitalRead(pirSensorPin);
+      inputPwd = getInputPwd();
+      passwordsMatches = inputPwd == password;
     }
     if (moveDetected) {
       int countingTime = 0;
       unsigned long int startCountingTime = millis();
       btnPressed = digitalRead(btnPin);
       while (countingTime <= warningTime && !btnPressed) {
-       warning();
-       countingTime = millis() - startCountingTime;
-       btnPressed = digitalRead(btnPin);
+        warning();
+        countingTime = millis() - startCountingTime;
+        btnPressed = digitalRead(btnPin);
       }
       if (countingTime > warningTime) {
         while (!btnPressed) {
@@ -162,16 +166,19 @@ void peep(int peepInterval) {
   }
 }
 
-String waitForPassword() {
-  String pwd = "";
-  char key = keyPad.getKey();
-  if (key == '*') {
-    Serial.println("* pressed");
-    while (key != '#') {
-      key = keyPad.getKey();
-      pwd += key;
-      delay(10);
-    }
+String getInputPwd() {
+  char pressedKey = keyPad.getKey();
+  if (pressedKey == '*') {
+    pwd = "";
+    writingPwd = true;
+    Serial.println("on");
+  } else if (pressedKey == '#') {
+    writingPwd = false;
+    Serial.println("off");
     return pwd;
   }
+  if (writingPwd && pressedKey) {
+    pwd += pressedKey;
+  }
+  return "";
 }
