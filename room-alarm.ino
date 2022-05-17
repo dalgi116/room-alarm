@@ -38,15 +38,17 @@ int keypadResetTime = 10000;
 String password = "*111";
 
 Servo servo;
-Led rLED;
-Led yLED;
-const byte buzzPin = 4;
-const byte btnPin = A5;
-const byte pirSensorPin = 5;
+Led arLED;
+Led ayLED;
+Led krLED;
+Led kgLED;
+const byte buzzPin = 6;
+const byte btnPin = 7;
+const byte pirSensorPin = 9;
 const byte keypadRows = 4;
 const byte keypadColumns = 3;
-const byte rowsPins[keypadRows] = {13, 12, 11, 10};
-const byte columnsPins[keypadColumns] = {9, 8, 7};
+const byte rowsPins[keypadRows] = {A0, A1, A2, A3};
+const byte columnsPins[keypadColumns] = {A4, A5, 10};
 
 char keypadCharacters[keypadRows][keypadColumns] = {
    {'1','2','3'},
@@ -57,9 +59,11 @@ char keypadCharacters[keypadRows][keypadColumns] = {
 Keypad keyPad = Keypad(makeKeymap(keypadCharacters), rowsPins, columnsPins, keypadRows, keypadColumns);
 
 void setup() {
-  servo.attach(6);
-  yLED.setup(3);
-  rLED.setup(2);
+  servo.attach(8);
+  ayLED.setup(3);
+  arLED.setup(2);
+  krLED.setup(4);
+  kgLED.setup(5);
   pinMode(buzzPin, OUTPUT);
   pinMode(btnPin, INPUT);
   pinMode(pirSensorPin, INPUT);
@@ -92,6 +96,10 @@ void loop() {
       inputPwd = getInputPwd();
       passwordsMatches = inputPwd == password;
     }
+    if (passwordsMatches) {
+      kgLED.on();
+      krLED.off();
+    }
     if (moveDetected) {
       countingTime = 0;
       startCountingTime = millis();
@@ -109,6 +117,10 @@ void loop() {
           inputPwd = getInputPwd();
           passwordsMatches = inputPwd == password;
         }
+        if (passwordsMatches) {
+          kgLED.on();
+          krLED.off();
+        }
       }
     }
     tone(buzzPin, peepFrequency);
@@ -119,39 +131,42 @@ void loop() {
 
 // alarm state functions
 void unlocked() {
-  rLED.off();
-  yLED.off();
+  arLED.off();
+  ayLED.off();
+  krLED.off();
+  kgLED.off();
   noTone(buzzPin);
   servo.write(0);
 }
 
 void locking() {
   int interval = 1500;
-  rLED.off();
-  yLED.flash(interval);
+  arLED.off();
+  ayLED.flash(interval);
   peep(interval);
   servo.write(0);
 }
 
 void locked() {
-  rLED.off();
-  yLED.on();
+  arLED.off();
+  ayLED.on();
+  krLED.on();
   noTone(buzzPin);
   servo.write(servoLockedPosition);
 }
 
 void warning() {
   int interval = 1000;
-  rLED.flash(interval);
-  yLED.on();
+  arLED.flash(interval);
+  ayLED.on();
   peep(interval);
   servo.write(servoLockedPosition);
 }
 
 void alarm() {
   int interval = 500;
-  rLED.flash(interval);
-  yLED.on();
+  arLED.flash(interval);
+  ayLED.on();
   peep(interval);
   servo.write(servoLockedPosition);
 }
